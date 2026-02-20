@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <title>Super Pênaltis Pro</title>
+
 <style>
 body{
     margin:0;
@@ -39,7 +40,16 @@ body{
     background-size:contain;
     background-repeat:no-repeat;
     background-position:center;
-    transition:left 0.4s ease;
+    transform:translateX(-50%);
+    transition:transform 0.5s cubic-bezier(.25,.8,.25,1);
+}
+
+.jump-left{
+    transform:translateX(-220px) translateY(40px) rotate(-15deg);
+}
+
+.jump-right{
+    transform:translateX(120px) translateY(40px) rotate(15deg);
 }
 
 #bola{
@@ -52,6 +62,7 @@ body{
     background-size:cover;
     border-radius:50%;
     cursor:pointer;
+    transform:translateX(-50%);
     transition:all 0.6s cubic-bezier(.17,.67,.83,.67);
 }
 
@@ -93,19 +104,11 @@ const mensagem = document.getElementById("mensagem");
 let pontos = 0;
 let chutes = 0;
 let startX = 0;
-let startY = 0;
 let larguraTela = window.innerWidth;
-
-function centralizarGoleiro(){
-    goleiro.style.left = (larguraTela/2 - 45) + "px";
-}
-
-centralizarGoleiro();
 
 function iniciarChute(e){
     const evento = e.touches ? e.touches[0] : e;
     startX = evento.clientX;
-    startY = evento.clientY;
 
     document.addEventListener("mouseup", finalizarChute);
     document.addEventListener("touchend", finalizarChute);
@@ -123,8 +126,8 @@ function finalizarChute(e){
     const defesaAutomatica = (chutes % 4 === 0);
 
     bola.style.bottom = "70%";
-    bola.style.left = (destinoX - 22) + "px";
-    bola.style.transform = "scale(0.5)";
+    bola.style.left = destinoX + "px";
+    bola.style.transform = "translateX(-50%) scale(0.5)";
 
     setTimeout(()=>{
         verificarGol(destinoX, defesaAutomatica);
@@ -137,15 +140,18 @@ function verificarGol(x, defesaAutomatica){
     const golDireita = larguraTela/2 + 250;
 
     if(defesaAutomatica){
-        moverParaLado(x);
+        if(x < larguraTela/2){
+            goleiro.classList.add("jump-left");
+        } else {
+            goleiro.classList.add("jump-right");
+        }
         mostrarMensagem("DEFESA!");
-        return;
     }
-
-    if(x > golEsquerda && x < golDireita){
-        pontos += 10;
+    else if(x > golEsquerda && x < golDireita){
         mostrarMensagem("GOOOOL!");
-    } else {
+        pontos += 10;
+    } 
+    else {
         mostrarMensagem("Pra Fora!");
     }
 
@@ -158,12 +164,20 @@ function verificarGol(x, defesaAutomatica){
     }
 }
 
-function moverParaLado(x){
-    if(x < larguraTela/2){
-        goleiro.style.left = (larguraTela/2 - 200) + "px";
-    } else {
-        goleiro.style.left = (larguraTela/2 + 110) + "px";
-    }
+function resetar(){
+    setTimeout(()=>{
+        bola.style.transition="none";
+        bola.style.bottom="80px";
+        bola.style.left="50%";
+        bola.style.transform="translateX(-50%) scale(1)";
+        goleiro.classList.remove("jump-left");
+        goleiro.classList.remove("jump-right");
+
+        setTimeout(()=>{
+            bola.style.transition="all 0.6s cubic-bezier(.17,.67,.83,.67)";
+        },50);
+
+    },800);
 }
 
 function mostrarMensagem(texto){
@@ -172,28 +186,11 @@ function mostrarMensagem(texto){
     setTimeout(()=> mensagem.style.display="none",1000);
 }
 
-function resetar(){
-    bola.style.transition="none";
-    bola.style.bottom="80px";
-    bola.style.left="50%";
-    bola.style.transform="scale(1)";
-    centralizarGoleiro();
-    setTimeout(()=> bola.style.transition="all 0.6s cubic-bezier(.17,.67,.83,.67)",50);
-}
-
-function moverGoleiroAleatorio(){
-    const random = Math.random()*300 - 150;
-    goleiro.style.left = (larguraTela/2 - 45 + random) + "px";
-}
-
-setInterval(moverGoleiroAleatorio,1500);
-
 bola.addEventListener("mousedown", iniciarChute);
 bola.addEventListener("touchstart", iniciarChute);
 
 window.addEventListener("resize", ()=>{
     larguraTela = window.innerWidth;
-    centralizarGoleiro();
 });
 </script>
 
