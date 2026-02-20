@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Super Pênaltis</title>
+<title>Super Pênaltis Pro</title>
 <style>
 body{
     margin:0;
@@ -27,34 +27,25 @@ body{
     height:180px;
     border:6px solid white;
     border-bottom:none;
-    background:
-    repeating-linear-gradient(
-        90deg,
-        rgba(255,255,255,0.2) 0px,
-        rgba(255,255,255,0.2) 5px,
-        transparent 5px,
-        transparent 25px
-    );
 }
 
 #goleiro{
     position:absolute;
     top:14%;
     left:50%;
-    transform:translateX(-50%);
     width:90px;
     height:140px;
     background-image:url("https://i.imgur.com/9Q9ZQZV.png");
     background-size:contain;
     background-repeat:no-repeat;
-    transition:all 0.4s ease;
+    background-position:center;
+    transition:left 0.4s ease;
 }
 
 #bola{
     position:absolute;
     bottom:80px;
     left:50%;
-    transform:translateX(-50%);
     width:45px;
     height:45px;
     background-image:url("https://i.imgur.com/8Qf6G6C.png");
@@ -94,18 +85,27 @@ body{
 </div>
 
 <script>
-let bola = document.getElementById("bola");
-let goleiro = document.getElementById("goleiro");
-let placar = document.getElementById("placar");
-let mensagem = document.getElementById("mensagem");
+const bola = document.getElementById("bola");
+const goleiro = document.getElementById("goleiro");
+const placar = document.getElementById("placar");
+const mensagem = document.getElementById("mensagem");
 
 let pontos = 0;
 let chutes = 0;
-let startX, startY;
+let startX = 0;
+let startY = 0;
+let larguraTela = window.innerWidth;
+
+function centralizarGoleiro(){
+    goleiro.style.left = (larguraTela/2 - 45) + "px";
+}
+
+centralizarGoleiro();
 
 function iniciarChute(e){
-    startX = e.clientX || e.touches[0].clientX;
-    startY = e.clientY || e.touches[0].clientY;
+    const evento = e.touches ? e.touches[0] : e;
+    startX = evento.clientX;
+    startY = evento.clientY;
 
     document.addEventListener("mouseup", finalizarChute);
     document.addEventListener("touchend", finalizarChute);
@@ -115,19 +115,16 @@ function finalizarChute(e){
     document.removeEventListener("mouseup", finalizarChute);
     document.removeEventListener("touchend", finalizarChute);
 
-    let endX = e.clientX || (e.changedTouches ? e.changedTouches[0].clientX : startX);
-    let endY = e.clientY || (e.changedTouches ? e.changedTouches[0].clientY : startY);
-
-    let deltaX = endX - startX;
-    let destinoX = window.innerWidth/2 + deltaX;
+    const evento = e.changedTouches ? e.changedTouches[0] : e;
+    const deltaX = evento.clientX - startX;
+    const destinoX = larguraTela/2 + deltaX;
 
     chutes++;
-
-    let defesaAutomatica = (chutes % 4 === 0);
+    const defesaAutomatica = (chutes % 4 === 0);
 
     bola.style.bottom = "70%";
-    bola.style.left = destinoX + "px";
-    bola.style.transform = "translateX(-50%) scale(0.5)";
+    bola.style.left = (destinoX - 22) + "px";
+    bola.style.transform = "scale(0.5)";
 
     setTimeout(()=>{
         verificarGol(destinoX, defesaAutomatica);
@@ -136,20 +133,19 @@ function finalizarChute(e){
 }
 
 function verificarGol(x, defesaAutomatica){
-    let golEsquerda = window.innerWidth/2 - 250;
-    let golDireita = window.innerWidth/2 + 250;
-
-    let lado = x < window.innerWidth/2 ? -150 : 150;
+    const golEsquerda = larguraTela/2 - 250;
+    const golDireita = larguraTela/2 + 250;
 
     if(defesaAutomatica){
-        goleiro.style.transform = `translateX(${lado}px)`;
+        moverParaLado(x);
         mostrarMensagem("DEFESA!");
+        return;
     }
-    else if(x > golEsquerda && x < golDireita){
+
+    if(x > golEsquerda && x < golDireita){
         pontos += 10;
         mostrarMensagem("GOOOOL!");
-    }
-    else{
+    } else {
         mostrarMensagem("Pra Fora!");
     }
 
@@ -159,6 +155,14 @@ function verificarGol(x, defesaAutomatica){
         mostrarMensagem("🏆 VOCÊ GANHOU!");
         pontos = 0;
         chutes = 0;
+    }
+}
+
+function moverParaLado(x){
+    if(x < larguraTela/2){
+        goleiro.style.left = (larguraTela/2 - 200) + "px";
+    } else {
+        goleiro.style.left = (larguraTela/2 + 110) + "px";
     }
 }
 
@@ -172,20 +176,25 @@ function resetar(){
     bola.style.transition="none";
     bola.style.bottom="80px";
     bola.style.left="50%";
-    bola.style.transform="translateX(-50%) scale(1)";
-    goleiro.style.transform="translateX(-50%)";
+    bola.style.transform="scale(1)";
+    centralizarGoleiro();
     setTimeout(()=> bola.style.transition="all 0.6s cubic-bezier(.17,.67,.83,.67)",50);
 }
 
-function moverGoleiro(){
-    let random = Math.random()*300 - 150;
-    goleiro.style.transform = `translateX(${random}px)`;
+function moverGoleiroAleatorio(){
+    const random = Math.random()*300 - 150;
+    goleiro.style.left = (larguraTela/2 - 45 + random) + "px";
 }
 
-setInterval(moverGoleiro,1500);
+setInterval(moverGoleiroAleatorio,1500);
 
 bola.addEventListener("mousedown", iniciarChute);
 bola.addEventListener("touchstart", iniciarChute);
+
+window.addEventListener("resize", ()=>{
+    larguraTela = window.innerWidth;
+    centralizarGoleiro();
+});
 </script>
 
 </body>
