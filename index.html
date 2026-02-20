@@ -2,60 +2,84 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Jogo de Pênaltis</title>
+<title>Super Pênaltis</title>
 <style>
-body {
-    margin: 0;
-    background: #2e8b57;
-    overflow: hidden;
-    font-family: Arial, sans-serif;
+body{
+    margin:0;
+    overflow:hidden;
+    font-family:Arial, sans-serif;
+    background:linear-gradient(#4facfe,#00f2fe);
 }
 
-#campo {
-    position: relative;
-    width: 100vw;
-    height: 100vh;
+#campo{
+    position:relative;
+    width:100vw;
+    height:100vh;
+    background:linear-gradient(#2e8b57,#1f5f3f);
 }
 
-#gol {
-    position: absolute;
-    top: 10%;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 400px;
-    height: 150px;
-    border: 5px solid white;
+#gol{
+    position:absolute;
+    top:8%;
+    left:50%;
+    transform:translateX(-50%);
+    width:500px;
+    height:180px;
+    border:6px solid white;
+    border-bottom:none;
+    background:
+    repeating-linear-gradient(
+        90deg,
+        rgba(255,255,255,0.2) 0px,
+        rgba(255,255,255,0.2) 5px,
+        transparent 5px,
+        transparent 25px
+    );
 }
 
-#goleiro {
-    position: absolute;
-    top: 18%;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 80px;
-    height: 80px;
-    background: blue;
-    border-radius: 10px;
+#goleiro{
+    position:absolute;
+    top:14%;
+    left:50%;
+    transform:translateX(-50%);
+    width:90px;
+    height:140px;
+    background-image:url("https://i.imgur.com/9Q9ZQZV.png");
+    background-size:contain;
+    background-repeat:no-repeat;
+    transition:all 0.4s ease;
 }
 
-#bola {
-    position: absolute;
-    bottom: 50px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 40px;
-    height: 40px;
-    background: white;
-    border-radius: 50%;
-    cursor: grab;
+#bola{
+    position:absolute;
+    bottom:80px;
+    left:50%;
+    transform:translateX(-50%);
+    width:45px;
+    height:45px;
+    background-image:url("https://i.imgur.com/8Qf6G6C.png");
+    background-size:cover;
+    border-radius:50%;
+    cursor:pointer;
+    transition:all 0.6s cubic-bezier(.17,.67,.83,.67);
 }
 
-#placar {
-    position: absolute;
-    top: 10px;
-    left: 10px;
-    color: white;
-    font-size: 20px;
+#placar{
+    position:absolute;
+    top:20px;
+    left:20px;
+    font-size:22px;
+    color:white;
+}
+
+#mensagem{
+    position:absolute;
+    top:50%;
+    left:50%;
+    transform:translate(-50%,-50%);
+    font-size:40px;
+    color:white;
+    display:none;
 }
 </style>
 </head>
@@ -63,6 +87,7 @@ body {
 
 <div id="campo">
     <div id="placar">Pontos: 0</div>
+    <div id="mensagem"></div>
     <div id="gol"></div>
     <div id="goleiro"></div>
     <div id="bola"></div>
@@ -72,86 +97,95 @@ body {
 let bola = document.getElementById("bola");
 let goleiro = document.getElementById("goleiro");
 let placar = document.getElementById("placar");
+let mensagem = document.getElementById("mensagem");
 
 let pontos = 0;
 let chutes = 0;
-let defendidoForcado = false;
-
 let startX, startY;
 
-bola.addEventListener("mousedown", (e) => {
-    startX = e.clientX;
-    startY = e.clientY;
+function iniciarChute(e){
+    startX = e.clientX || e.touches[0].clientX;
+    startY = e.clientY || e.touches[0].clientY;
 
-    document.addEventListener("mouseup", chutar);
-});
+    document.addEventListener("mouseup", finalizarChute);
+    document.addEventListener("touchend", finalizarChute);
+}
 
-function chutar(e) {
-    document.removeEventListener("mouseup", chutar);
+function finalizarChute(e){
+    document.removeEventListener("mouseup", finalizarChute);
+    document.removeEventListener("touchend", finalizarChute);
 
-    let deltaX = e.clientX - startX;
-    let deltaY = e.clientY - startY;
+    let endX = e.clientX || (e.changedTouches ? e.changedTouches[0].clientX : startX);
+    let endY = e.clientY || (e.changedTouches ? e.changedTouches[0].clientY : startY);
 
-    let destinoX = window.innerWidth / 2 + deltaX;
-    let destinoY = window.innerHeight - 50 + deltaY;
+    let deltaX = endX - startX;
+    let destinoX = window.innerWidth/2 + deltaX;
 
     chutes++;
 
-    if (chutes % 4 === 0) {
-        defendidoForcado = true;
-    } else {
-        defendidoForcado = false;
-    }
+    let defesaAutomatica = (chutes % 4 === 0);
 
-    bola.style.transition = "all 0.5s ease";
+    bola.style.bottom = "70%";
     bola.style.left = destinoX + "px";
-    bola.style.top = destinoY + "px";
+    bola.style.transform = "translateX(-50%) scale(0.5)";
 
-    setTimeout(() => {
-        verificarGol(destinoX);
-        resetarBola();
-    }, 600);
+    setTimeout(()=>{
+        verificarGol(destinoX, defesaAutomatica);
+        resetar();
+    },600);
 }
 
-function verificarGol(x) {
-    let golEsquerda = window.innerWidth/2 - 200;
-    let golDireita = window.innerWidth/2 + 200;
+function verificarGol(x, defesaAutomatica){
+    let golEsquerda = window.innerWidth/2 - 250;
+    let golDireita = window.innerWidth/2 + 250;
 
-    let goleiroPos = goleiro.getBoundingClientRect();
+    let lado = x < window.innerWidth/2 ? -150 : 150;
 
-    let goleiroCentro = goleiroPos.left + goleiroPos.width/2;
-
-    if (defendidoForcado || Math.abs(x - goleiroCentro) < 50) {
-        alert("DEFESA!");
-    } else if (x > golEsquerda && x < golDireita) {
+    if(defesaAutomatica){
+        goleiro.style.transform = `translateX(${lado}px)`;
+        mostrarMensagem("DEFESA!");
+    }
+    else if(x > golEsquerda && x < golDireita){
         pontos += 10;
-        alert("GOOOL!");
-    } else {
-        alert("Pra fora!");
+        mostrarMensagem("GOOOOL!");
+    }
+    else{
+        mostrarMensagem("Pra Fora!");
     }
 
     placar.innerText = "Pontos: " + pontos;
 
-    if (pontos >= 100) {
-        alert("🏆 VOCÊ GANHOU!");
+    if(pontos >= 100){
+        mostrarMensagem("🏆 VOCÊ GANHOU!");
         pontos = 0;
         chutes = 0;
     }
 }
 
-function resetarBola() {
-    bola.style.transition = "none";
-    bola.style.bottom = "50px";
-    bola.style.left = "50%";
-    bola.style.top = "";
+function mostrarMensagem(texto){
+    mensagem.innerText = texto;
+    mensagem.style.display = "block";
+    setTimeout(()=> mensagem.style.display="none",1000);
 }
 
-function moverGoleiro() {
-    let random = Math.random() * 300 - 150;
-    goleiro.style.left = "calc(50% + " + random + "px)";
+function resetar(){
+    bola.style.transition="none";
+    bola.style.bottom="80px";
+    bola.style.left="50%";
+    bola.style.transform="translateX(-50%) scale(1)";
+    goleiro.style.transform="translateX(-50%)";
+    setTimeout(()=> bola.style.transition="all 0.6s cubic-bezier(.17,.67,.83,.67)",50);
 }
 
-setInterval(moverGoleiro, 1000);
+function moverGoleiro(){
+    let random = Math.random()*300 - 150;
+    goleiro.style.transform = `translateX(${random}px)`;
+}
+
+setInterval(moverGoleiro,1500);
+
+bola.addEventListener("mousedown", iniciarChute);
+bola.addEventListener("touchstart", iniciarChute);
 </script>
 
 </body>
